@@ -4,6 +4,7 @@ const app = express();
 require("dotenv").config();
 
 const ObjectId = require("mongodb").ObjectId;
+const stripe = require("stripe")(process.env.STRIPE_SECRET);
 
 const { MongoClient } = require("mongodb");
 
@@ -26,11 +27,6 @@ async function run() {
     const orderCollection = database.collection("orders");
     const reviewCollection = database.collection("reviews");
     const userRolesCollection = database.collection("userRoles");
-
-    // app.get("/watches", async (req, res) => {
-    //   const allWatches = await watchesCollection.find({}).toArray();
-    //   res.send(allWatches);
-    // });
 
     app.get("/foods", async (req, res) => {
       const selected = req.query.filter;
@@ -83,6 +79,26 @@ async function run() {
       const allUserOrders = await orderCollection.find({}).toArray();
 
       res.send(allUserOrders);
+    });
+
+    app.get("/manageAllOrders/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const result = await orderCollection.findOne(query);
+      res.json(result);
+    });
+
+    app.put("/manageAllOrders/:id", async (req, res) => {
+      const id = req.params.id;
+      const payment = req.body;
+      const filter = { _id: ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          payment: payment,
+        },
+      };
+      const result = await orderCollection.updateOne(filter, updateDoc);
+      res.json(result);
     });
 
     app.post("/deleteOrder", async (req, res) => {
@@ -157,6 +173,28 @@ async function run() {
       await foodsCollection.deleteOne({ _id: ObjectId(deleteReqId) });
 
       res.send();
+    });
+
+    // app.post("create-payment-intent", async (req, res) => {
+    //   const paymentInfo = req.body;
+    //   const amount = paymentInfo.price * 100;
+    //   const paymentIntent = await stripe.paymentIntents.create({
+    //     currency: "usd",
+    //     amount: amount,
+    //     payment_method_types: ["card"],
+    //   });
+    //   res.json({ clientSecret: paymentIntent.client_secret });
+    // });
+
+    app.post("/create-payment-intent", async (req, res) => {
+      const paymentInfo = req.body;
+      const amount = paymentInfo.price * 100;
+      const paymentIntent = await stripe.paymentIntents.create({
+        currency: "usd",
+        amount: amount,
+        payment_method_types: ["card"],
+      });
+      res.json({ clientSecret: paymentIntent.client_secret });
     });
   } finally {
     // await client.close();
