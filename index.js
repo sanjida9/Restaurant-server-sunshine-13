@@ -4,9 +4,9 @@ const app = express();
 require("dotenv").config();
 
 const ObjectId = require("mongodb").ObjectId;
-const stripe = require("stripe")(process.env.STRIPE_SECRET);
 
 const { MongoClient } = require("mongodb");
+const stripe = require("stripe")(process.env.STRIPE_SECRET);
 
 const port = process.env.PORT || 5000;
 
